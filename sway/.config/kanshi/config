@@ -1,0 +1,64 @@
+#include /etc/kanshi/config.d/*
+
+profile default {
+    # Laptop Monitor
+    output "Sharp Corporation 0x1515 0x00000000" enable mode 1920x1200 position 0,0
+}
+
+profile remitly-office {
+    # Laptop Monitor
+    output "Sharp Corporation 0x1515 0x00000000" enable mode 1920x1200 position 1440,2000
+
+    # Middle Monitor
+    output "Dell Inc. DELL U2719D 7FDXQV8" enable mode 2560x1440 position 1440,560
+
+    # Left/Vertical Monitor
+    output "Dell Inc. DELL U2719D FDXQV83" enable mode 2560x1440 position 0,0 transform 270
+}
+
+profile home-office {
+    # Laptop Monitor
+    output "eDP-1" disable
+    #output "Sharp Corporation 0x1515 0x00000000" disable
+
+    # Left Monitor
+    # Dell Inc. DELL U2715H H7YCC74H0DSL
+    output "Dell Inc. DELL U2715H H7YCC74H0DSL" enable mode 2560x1440 position 0,0 transform 90
+
+    # Middle Monitor
+    # Dell Inc. DELL U2715H H7YCC74H0CYL
+    output "Dell Inc. DELL U2715H H7YCC74H0CYL" enable mode 2560x1440 position 1440,1120
+
+    # Right Monitor
+    # Dell Inc. DELL U2715H H7YCC74H0E1L
+    #output "Dell Inc. DELL U2715H H7YCC74H0E1L" enable mode 2048x1152 position 4000,512 transform 270
+    output "Dell Inc. DELL U2715H H7YCC74H0E1L" enable mode 2560x1440 position 4000,0 transform 270
+
+    # Arrange workspaces appropriately.
+    # C&C
+    exec swaymsg workspace \$workspace10, move workspace to \"Dell Inc. DELL U2715H H7YCC74H0E1L\"
+
+    # Primary vm workspaces
+    exec swaymsg workspace \$workspace1, move workspace to \"Dell Inc. DELL U2715H H7YCC74H0CYL\"
+    exec swaymsg workspace \$workspace2, move workspace to \"Dell Inc. DELL U2715H H7YCC74H0CYL\"
+    exec swaymsg workspace \$workspace3, move workspace to \"Dell Inc. DELL U2715H H7YCC74H0CYL\"
+
+    # Alternate vm workspaces
+    exec swaymsg workspace \$workspace6, move workspace to \"Dell Inc. DELL U2715H H7YCC74H0DSL\"
+    exec swaymsg workspace \$workspace7, move workspace to \"Dell Inc. DELL U2715H H7YCC74H0DSL\"
+    exec swaymsg workspace \$workspace8, move workspace to \"Dell Inc. DELL U2715H H7YCC74H0DSL\"
+}
+
+profile home-office-degraded {
+    # Laptop Monitor
+    output "Sharp Corporation 0x1515 0x00000000" disable
+
+    # Left Monitor - Not detected yet.
+    # output "Dell Inc. DELL U2715H H7YCC74H0DSL" enable mode 2560x1440 position 0,0 transform 90
+
+    # Middle Monitor
+    output "Dell Inc. DELL U2715H H7YCC74H0CYL" enable mode 2560x1440 position 1440,1120
+
+    # Right Monitor
+    output "Dell Inc. DELL U2715H H7YCC74H0E1L" enable mode 2560x1440 position 4000,0 transform 270
+}

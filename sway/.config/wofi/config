@@ -1,0 +1,23 @@
+# What's the mode to open in? (`man 7 wofi`` for more info)
+show=drun
+
+# What to show the prompt. Defaults to the mode.
+prompt=
+
+# Enable images & pango markup.
+allow_images=true
+allow_markup=true
+
+# Case insensitive search
+insensitive=true
+
+# Dark mode FTW
+gtk_dark=true
+
+# Movement (Emacs style bindings)
+key_up=Control_L-p
+key_down=Control_L-n
+key_left=Control_L-b
+key_right=Control_L-f
+key_exit=Control_L-g
+key_expand=Tab

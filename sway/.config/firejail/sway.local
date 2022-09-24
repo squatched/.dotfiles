@@ -1,0 +1,2 @@
+# Allow access to wallpapers
+noblacklist /usr/share/backgrounds

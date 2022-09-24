@@ -1,0 +1,409 @@
+########## SOURCE FILE 00-input.conf ##########
+# Setup keyboard mapping.
+input "type:keyboard" {
+    xkb_layout  "us"
+    xkb_variant "dvorak"
+    xkb_options "ctrl:nocaps"
+    xkb_numlock "enabled"
+}
+###############################################
+
+
+########## SOURCE FILE 10-vars.conf ##########
+# Modifier keys (according to xmodmap):
+#   mod1 = Alt
+#   mod2 = NumLock
+#   mod3 =
+#   mod4 = Super (Win)
+#   mod5 = Mode Switch (Scroll Lock maybe?)
+#   shift
+#   lock ?
+#   control
+set $mod Mod4
+set $numlock Mod2
+
+# Set some defines for system colors.
+#set $color-bg               #2f343f
+#set $color-bg-inactive      #2f343f
+#set $color-bg-urgent        #E53935
+#set $color-bd               #2f343f
+#set $color-bd-inactive      #2f343f
+#set $color-bd-urgent        #E53935
+#set $color-text             #f3f4f5
+#set $color-text-inactive    #676E7D
+#set $color-text-urgent      #f3f4f5
+#set $color-ind              #757575
+#set $color-ind-inactive     #757575
+#set $color-ind-urgent       #757575
+#set $color-sep              #757575
+#set $color-sep-inactive     #757575
+#set $color-sep-urgent       #757575
+
+
+set $color-bd               #ffffff
+set $color-bd-inactive      #4080bf
+set $color-bd-urgent        #33ccff
+set $color-bg               #ffffff
+set $color-bg-inactive      #4080bf
+set $color-bg-urgent        #33ccff
+set $color-text             #444444
+set $color-text-inactive    #222222
+set $color-text-urgent      #222222
+set $color-ind              #0066ff
+set $color-ind-inactive     #4080bf
+set $color-ind-urgent       #33ccff
+set $color-sep              #ffffff
+set $color-sep-inactive     #4080bf
+set $color-sep-urgent       #33ccff
+
+# Define my workspaces and their names.
+set $workspace1 1:vm-work
+set $workspace2 2:vm-src
+set $workspace3 3:vm-personal
+set $workspace4 4:scratch
+set $workspace5 5
+set $workspace6 6:vm-work-alt
+set $workspace7 7:vm-src-alt
+set $workspace8 8:vm-personal-alt
+set $workspace9 9:scratch-alt
+set $workspace10 0:ctrl
+##############################################
+
+
+########## SOURCE FILE 20-appearance.conf ##########
+# This font is widely installed, provides lots of unicode glyphs, right-to-left
+# text rendering and scalability on retina/hidpi displays (thanks to pango).
+#font pango:DejaVu Sans Mono 10
+font pango:Sans 10
+
+# Window color definitions
+# <colorclass>              <border>            <background>        <text>                  <indicator>             <separator>
+client.focused              $color-bd           $color-bg           $color-text             $color-ind              $color-sep
+client.unfocused            $color-bd-inactive  $color-bg-inactive  $color-text-inactive    $color-ind-inactive     $color-sep-inactive
+client.focused_inactive     $color-bd-inactive  $color-bg-inactive  $color-text-inactive    $color-ind-inactive     $color-sep-inactive
+client.urgent               $color-bd-urgent    $color-bg-urgent    $color-text-urgent      $color-ind-urgent       $color-sep-urgent
+
+bar swaybar_command waybar
+
+output * bg /usr/share/backgrounds/archlinux/landscape.jpg fill
+
+# Gaps
+gaps {
+    # Gaps between workspaces.
+    outer 4
+    # Gaps between windows.
+    inner 10
+}
+
+# Set border style.
+default_border pixel 2
+####################################################
+
+
+########## SOURCE FILE 30-apps.conf ##########
+# What terminal to use.
+#   Defaults:
+#   - i3: i3-sensible-term
+#   - sway: foot
+set $term alacritty
+
+# What menu to use.
+#   Defaults:
+#   - i3: dmenu_run
+#   - sway: dmenu_path | dmenu | xargs swaymsg exec --
+#   Ones I've used:
+#   - i3-dmenu-desktop
+#   - rofi -show drun -show-icons -font "Sans 14" -run-shell-command '{terminal} -e " {cmd}; read -n 1 -s"'
+#set $menu rofi -show drun -show-icons -font "Sans 14" -run-shell-command '{terminal} -e " {cmd}; read -n 1 -s"'
+# See ~/.config/wofi/config for settings.
+set $menu wofi
+
+# A menu strictly for showing open windows (DOESN'T WORK, TODO)
+set $window_menu swaymsg --type get_tree | jq -r '.nodes[].nodes[] | if .nodes then [recurse(.nodes[])] else [] end + .floating_nodes | .[] | select(.nodes == []) | ((.id | tostring) + "" + .name)' | $menu | {
+    read -r id name
+    swaymsg "[con_id=$id]" focus
+}
+
+# The command to generate my conf file.
+set $generate_conf generate-conf-file --force ~/.config/sway/config.d
+
+# Define what to do when locking the screen.
+set $lock swaylock --config ${HOME}/.config/swaylock/config
+
+# Idle configuration
+exec swayidle -w \
+    timeout 300 'swaylock --daemonize --config ${HOME}/.config/swaylock/config' \
+    timeout 600 'systemctl suspend' \
+        resume 'swaymsg "output * dpms on"' \
+    before-sleep 'swaylock --daemonize --config ${HOME}/.config/swaylock/config'
+
+# Screen layout handling.
+exec kanshi
+exec_always kanshictl reload
+
+# Polkit Auth Handler
+exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+
+# Floating apps.
+for_window [app_id="^virt-manager$" title="^Virtual Machine Manager$"] floating enable
+for_window [title="^Keybase$"] move position mouse
+for_window [app_id="org.keepassxc.KeePassXC"] floating enable
+
+#for_window [app_id="gnome-calendar"] floating enable
+exec KEYBASE_AUTOSTART=1 run_keybase
+exec keepassxc
+exec virt-manager
+exec alacritty --title alacritty-scratch
+for_window [title="alacritty-scratch"] move scratchpad
+##############################################
+
+
+########## SOURCE FILE 50-keybinds.conf ##########
+##### Window Manipulation #####
+# Use Mouse+$mod to drag floating windows to their wanted position
+floating_modifier $mod
+
+# kill focused window
+bindsym $mod+Shift+q kill
+bindsym Mod1+F4 kill
+
+# Window Focus
+bindsym {
+    $mod+b focus left
+    $mod+n focus down
+    $mod+p focus up
+    $mod+f focus right
+    $mod+Left focus left
+    $mod+Down focus down
+    $mod+Up focus up
+    $mod+Right focus right
+    $mod+a focus parent
+    $mod+Shift+a focus child
+
+    # Focus floater/tiled
+    $mod+space focus mode_toggle
+    $mod+minus scratchpad show
+}
+
+# Window Movement
+bindsym {
+    $mod+Shift+b move left
+    $mod+Shift+n move down
+    $mod+Shift+p move up
+    $mod+Shift+f move right
+    $mod+Shift+Left move left
+    $mod+Shift+Down move down
+    $mod+Shift+Up move up
+    $mod+Shift+Right move right
+    $mod+Shift+space floating toggle
+    $mod+Shift+minus move scratchpad
+}
+
+# Window Layout
+bindsym {
+    $mod+s layout stacking
+    $mod+t layout tabbed
+    $mod+e layout toggle split
+    $mod+h split h
+    $mod+v split v
+    $mod+F11 fullscreen toggle
+}
+###############################
+
+##### Workspace Manipulation #####
+bindsym {
+    # switch to workspace relative
+    $mod+Shift+Tab workspace prev
+    $mod+Tab workspace next
+
+    # Move workspaces between monitors.
+    $mod+Shift+Prior move workspace to output left
+    $mod+Shift+Next move workspace to output right
+    $mod+Ctrl+Prior move container to output left
+    $mod+Ctrl+Next move container to output right
+
+    # 1-5, Shift 1-5 switch to workspace.
+    # 6-0, Shift 6-0 move window/container to workspace.
+    $mod+1 workspace $workspace1
+    $mod+2 workspace $workspace2
+    $mod+3 workspace $workspace3
+    $mod+4 workspace $workspace4
+    $mod+5 workspace $workspace5
+    $mod+Shift+1 workspace $workspace6
+    $mod+Shift+2 workspace $workspace7
+    $mod+Shift+3 workspace $workspace8
+    $mod+Shift+4 workspace $workspace9
+    $mod+Shift+5 workspace $workspace10
+    $mod+6 move container to workspace $workspace1
+    $mod+7 move container to workspace $workspace2
+    $mod+8 move container to workspace $workspace3
+    $mod+9 move container to workspace $workspace4
+    $mod+0 move container to workspace $workspace5
+    $mod+Shift+6 move container to workspace $workspace6
+    $mod+Shift+7 move container to workspace $workspace7
+    $mod+Shift+8 move container to workspace $workspace8
+    $mod+Shift+9 move container to workspace $workspace9
+    $mod+Shift+0 move container to workspace $workspace10
+
+    # Allow workspace manipulation using the numpad.
+    $mod+KP_1 workspace $workspace1
+    $mod+KP_2 workspace $workspace2
+    $mod+KP_3 workspace $workspace3
+    $mod+KP_4 workspace $workspace4
+    $mod+KP_5 workspace $workspace5
+    $mod+KP_6 workspace $workspace6
+    $mod+KP_7 workspace $workspace7
+    $mod+KP_8 workspace $workspace8
+    $mod+KP_9 workspace $workspace9
+    $mod+KP_0 workspace $workspace10
+
+    # Even without numlock.
+    $mod+KP_End    workspace $workspace1
+    $mod+KP_Down   workspace $workspace2
+    $mod+KP_Next   workspace $workspace3
+    $mod+KP_Left   workspace $workspace4
+    $mod+KP_Begin  workspace $workspace5
+    $mod+KP_Right  workspace $workspace6
+    $mod+KP_Home   workspace $workspace7
+    $mod+KP_Up     workspace $workspace8
+    $mod+KP_Prior  workspace $workspace9
+    $mod+KP_Insert workspace $workspace10
+
+    # Even with numlock on, holding shift morphs all of these.
+    $mod+Shift+KP_End    move container to workspace $workspace1
+    $mod+Shift+KP_Down   move container to workspace $workspace2
+    $mod+Shift+KP_Next   move container to workspace $workspace3
+    $mod+Shift+KP_Left   move container to workspace $workspace4
+    $mod+Shift+KP_Begin  move container to workspace $workspace5
+    $mod+Shift+KP_Right  move container to workspace $workspace6
+    $mod+Shift+KP_Home   move container to workspace $workspace7
+    $mod+Shift+KP_Up     move container to workspace $workspace8
+    $mod+Shift+KP_Prior  move container to workspace $workspace9
+    $mod+Shift+KP_Insert move container to workspace $workspace10
+}
+##################################
+
+##### WM Apps #####
+bindsym $mod+Return exec $term
+bindsym $mod+d exec $menu
+bindsym $mod+g exec $window_menu
+###################
+
+##### Media Keybinds #####
+bindsym {
+    XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+    XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+    XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+    XF86AudioNext exec playerctl next
+    XF86AudioPrev exec playerctl previous
+    XF86AudioPlay exec playerctl play-pause
+    XF86MonBrightnessUp exec brightnessctl set 5%+
+    XF86MonBrightnessDown exec brightnessctl set 5%-
+}
+##########################
+
+##### WM Controls #####
+bindsym $mod+Shift+c exec $generate_conf, reload
+bindsym $mod+Alt+Shift+c exec
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
+bindsym $mod+l exec $lock
+#######################
+##################################################
+
+
+########## SOURCE FILE 90-modes.conf ##########
+##### Resize Window #####
+# resize window (you can also use the mouse for that)
+mode "Resize Window" {
+
+     # Pressing right will shrink the window’s width.
+     # Pressing left will grow the window’s width.
+     # Pressing down will shrink the window’s height.
+     # Pressing up will grow the window’s height.
+     bindsym b resize grow width 10 px or 10 ppt
+     bindsym f resize shrink width 10 px or 10 ppt
+     bindsym p resize grow height 10 px or 10 ppt
+     bindsym n resize shrink height 10 px or 10 ppt
+
+     # same bindings, but for the arrow keys
+     bindsym Right resize shrink width 10 px or 10 ppt
+     bindsym Up resize grow height 10 px or 10 ppt
+     bindsym Down resize shrink height 10 px or 10 ppt
+     bindsym Left resize grow width 10 px or 10 ppt
+
+      # Cancel mode: Enter, Escape, or Ctrl+g
+     bindsym Return mode "default"
+     bindsym Escape mode "default"
+     bindsym Ctrl+g mode "default"
+}
+bindsym $mod+r mode "Resize Window"
+#########################
+
+##### Window Move #####
+mode "Move Window" {
+    bindsym $mod+Tab    focus right
+
+    bindsym Left        move left 10 px
+    bindsym Down        move down 10 px
+    bindsym Up          move up 10 px
+    bindsym Right       move right 10 px
+
+    bindsym Ctrl+Left   move left
+    bindsym Ctrl+Down   move down
+    bindsym Ctrl+Up     move up
+    bindsym Ctrl+Right  move right
+
+    bindsym Alt+Left    move left 50 px
+    bindsym Alt+Down    move down 50 px
+    bindsym Alt+Up      move up 50 px
+    bindsym Alt+Right   move right 50 px
+
+    bindsym b           move left 10 px
+    bindsym n           move down 10 px
+    bindsym p           move up 10 px
+    bindsym f           move right 10 px
+
+    bindsym Ctrl+b      move left
+    bindsym Ctrl+n      move down
+    bindsym Ctrl+p      move up
+    bindsym Ctrl+f      move right
+
+    bindsym Alt+b       move left 50 px
+    bindsym Alt+n       move down 50 px
+    bindsym Alt+p       move up 50 px
+    bindsym Alt+f       move right 50 px
+
+    bindsym m           move position mouse
+    bindsym c           move position center
+    bindsym Shift+c     move absolute position center
+
+    # Cancel mode: Enter, Escape, or Ctrl+g
+    bindsym Return      mode "default"
+    bindsym Escape      mode "default"
+    bindsym Ctrl+g      mode "default"
+}
+bindsym $mod+m mode "Move Window", focus floating
+#######################
+
+##### System Mode #####
+# Setup a shutdown/lock/etc mode. Shortcut reminders are in the
+# mode name.
+set $mode_system_name System (l) lock, (e) logout, (s) suspend, (r) reboot, (Shift+s) shutdown
+mode "$mode_system_name" {
+         bindsym l       exec $lock, mode "default"
+         bindsym e       exec exit, mode "default"
+         bindsym s       exec systemctl suspend, mode "default"
+         bindsym r       exec shutdown --reboot now, mode "default"
+         bindsym Shift+s exec shutdown --poweroff now, mode "default"
+
+         # Cancel mode: Enter, Escape, or Ctrl+g
+         bindsym Return mode "default"
+         bindsym Escape mode "default"
+         bindsym Ctrl+g mode "default"
+
+}
+bindsym $mod+Delete mode "$mode_system_name"
+bindsym $mod+Pause mode "$mode_system_name"
+#######################
+###############################################

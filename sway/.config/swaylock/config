@@ -1,0 +1,10 @@
+# Image
+image=/usr/share/backgrounds/archlinux/mountain.jpg
+scaling=fill
+
+# Indicator
+ignore-empty-password
+indicator-caps-lock
+
+# Behavior
+show-failed-attempts

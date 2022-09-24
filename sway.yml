@@ -1,0 +1,27 @@
+---
+dependencies:
+  - # i3 compatible Wayland tiling window manager.
+    name: sway
+    bin: sway
+  - # The bar across the top of my screen.
+    name: waybar
+    bin: waybar
+  - # For managing screen layouts/resolutions.
+    name: kanshi
+    bin: kanshi
+  - # For locking the screen.
+    name: swaylock
+    bin: swaylock
+  - # For managing screensaver/auto-sleep/etc.
+    name: swayidle
+    bin: swayidle
+  - # Wallpapers
+    name: swaybg
+    bin: swaybg
+  - # App menu
+    name: wofi
+    bin: wofi
+  - # I need my `generate-conf-file` script.
+    name: my-bins
+    bin: generate-conf-file
+    install_cmd: ./install.sh my-bins
