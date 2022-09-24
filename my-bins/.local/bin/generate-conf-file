@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+
+getopt --test >/dev/null
+if [[ ${?} -ne 4 ]]; then
+    printf "Missing the right `getopt` version.\n"
+    exit 1
+fi
+
+set -euo pipefail
+IFS=$'\n\t'
+
+function show_help() {
+    cat <<EOF
+Usage: ${0##*/} [options] <directory>
+Assemble a conf file from all the files in its associated *.d directory. Note
+that the order of the resulting file is determined by order that the shell
+resolves the glob <directory>/*. The resulting file will be placed next to the
+directory, named the same as the directory without the trailing '.d'.
+e.g. - foo.conf.d will generate foo.conf.
+
+Options:
+    -d | --dry-run      Don't write to a file, just dump what it would be to
+                        standard out.
+    -f | --force        Overwrite the output file if it exists.
+    -h | --help         Display this help.
+    -o | --out-file     Specify the output file's location.
+
+    --hide-source       Hide the annotations in the output file that specify the
+                        source file for segments of the generated file.
+EOF
+}
+
+OPT_DRY_RUN=false
+OPT_FORCE=false
+OPT_OUT_FILE=""
+OPT_HIDE_SOURCE=false
+
+SHORT_OPTIONS="dfho:"
+LONG_OPTIONS="dry-run,force,help,out-file,hide-source"
+PARSED_ARGS=$(getopt \
+    --options="${SHORT_OPTIONS}" \
+    --longoptions="${LONG_OPTIONS}" \
+    --name ${0##*/} \
+    -- "$@")
+if [[ ${?} -ne 0 ]]; then
+    # Getopt has complained about invalid arguments.
+    exit 2
+fi
+
+eval set -- "${PARSED_ARGS}"
+while [[ ${#} -gt 0 ]]; do
+    case "${1}" in
+        -d|--dry-run)   OPT_DRY_RUN=true;;
+        -f|--force)     OPT_FORCE=true;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -o|--out-file)
+            shift
+            OPT_OUT_FILE="${1}"
+            ;;
+        --hide-source)  OPT_HIDE_SOURCE=true;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            printf "Programming error... Go yell at Caleb.\n"
+            exit 3
+            ;;
+    esac
+    shift
+done
+
+# Strip trailing slash if given.
+CONF_DIRECTORY="${1%%/}"
+if [[ ! -d ${CONF_DIRECTORY} ]]; then
+    printf "Must specify a conf directory.\n"
+    exit 4
+fi
+
+if [[ -z ${OPT_OUT_FILE} ]]; then
+    if [[ ${CONF_DIRECTORY} != *.d ]]; then
+        printf "Specified directory does not end in \".d\" so you must specify an output file explicitly.\n"
+        exit 4
+    fi
+    OUT_FILE="${CONF_DIRECTORY/%.d/}"
+else
+    OUT_FILE="${OPT_OUT_FILE}"
+fi
+
+if [[ -e ${OUT_FILE} ]] && ! ${OPT_DRY_RUN} && ! ${OPT_FORCE}; then
+    printf "Output file \"${OUT_FILE}\" exists. Use '--force' option to override. Aborting.\n"
+    exit 4
+fi
+
+# I should make something better, like an in-memory file or something. Then
+# --dry-run would succeed in more situations.
+TMP_FILE=$(mktemp -t "${0##*/}.tmp.XXXXXX")
+if [[ -z ${TMP_FILE} ]]; then
+    printf "Unable to create a tmp file.\n"
+    exit 5
+fi
+
+function cleanup_tmp() {
+    rm ${TMP_FILE};
+}
+trap cleanup_tmp EXIT
+
+first_file_included=false
+for conf_file in "${CONF_DIRECTORY}"/*; do
+    ${first_file_included} && printf "\n\n" >>${TMP_FILE}
+
+    # Figure out the source annotations.
+    open_string="########## SOURCE FILE ${conf_file##*/} ##########"
+    IFS=' ' close_string=$(printf '#%.0s' $(eval echo {1..${#open_string}}))
+
+    ${OPT_HIDE_SOURCE} || printf "%s\n" "${open_string}" >>${TMP_FILE}
+    cat "${conf_file}" >>${TMP_FILE}
+    ${OPT_HIDE_SOURCE} || printf "%s\n" "${close_string}" >>${TMP_FILE}
+    first_file_included=true
+done
+
+
+if ${OPT_DRY_RUN}; then
+    cat "${TMP_FILE}"
+    exit 0
+fi
+
+CP_ARG_FORCE=""
+${OPT_FORCE} && CP_ARG_FORCE="--force"
+cp ${CP_ARG_FORCE} "${TMP_FILE}" "${OUT_FILE}"

@@ -1,0 +1,38 @@
+#+title: Readme
+
+* Overview
+My computer configuration files. Originally started out at https://github.com/squatched/comp-setup but some standards have emerged since I made that so many years ago so I'm moving to this new setup and abandoning the old repo.
+
+* Where To Begin
+First, run `./bootstrap.sh` to ensure you have dependencies for the process
+installed. This also configures some local git variables because I don't want
+my work info in my personal repo.
+
+Next, start running `./install.sh <dir>` where `<dir>` is one of the child
+directories.
+
+* Dependencies
+These scripts were written in bash to be as light on the dependencies as possible.
+
+Before beginning, you should install:
+- `yq`: Much like `jq` but for yaml.
+
+`bootstrap.sh` will install other necessary dependencies which consist of:
+- `git`: Naturally. I mean. :gestures broadly:
+- `stow`: Used to manage the symlink farms that we're going to generate.
+These dependencies are described in `bootstrap.yml` (thus the need for you to pre-install `yq`).
+
+* Platform Support
+I'm writing these to support Arch linux and Debian based distros. To support more platforms, add package manager commands in `my-bins/.local/bin/libs/pkg-mgrs.yml`. It's probably best to stick to commands that don't require input.
+
+** Caveats
+*** Package Manager Command Package Location
+Packages that need to be installed will simply be appended to the end of any requisite package manager commands. There is a lack of complexity here but probably not going to be an issue. If you want to do something more complex with the packages, then maybe utilize the `install_cmd` feature of the dependency definition.
+*** Super User
+In general, these installation commands will be run as the super user. Sometimes though, this may be undesirable (e.g. - using yay on Arch, it asks for su password when needed and should not be run as su to begin with).
+
+* Dependency Data Model
+Any folder that is a package to be installed, if there are dependencies involved (e.g. - the program the dotfiles are for), then they can be defined in a file at the same layer as the folder with the same name as the folder with the extension `*.yml`. So, for example, if there is a folder named `my-pkg` at the root level of this repo, then I would define `my-pkg.yml`. This yaml file is expected to have a `dependencies` object that is an array of objects with three members:
+- `name`: This is simply the name of the dependency that is to be installed.
+- `bin`: A file that this dependency supplies. Its existence is checked to see if the dependency is installed.
+- `install_cmd`: If this dependency needs a special installation command (maybe its `curl`ed and piped into a shell, that's dirty and I HIGHLY discourage such activities but I dunno what you do in your own bedroom, that's on you), you can specify it here. This command will be run verbatim if the `--no-su` flag is supplied to the `install.sh` script. Otherwise it will be executed as the super user.

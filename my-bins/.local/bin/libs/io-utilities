@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+function get_first_stdin_byte() {
+    # Extremely helpful SO answer...
+    # https://unix.stackexchange.com/questions/33049/how-to-check-if-a-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt/33055#33055
+
+    # Read (count=1) 1 (bs=1) byte from stdin (default) as binary.
+    local stdin_byte=$(dd bs=1 count=1 2>/dev/null)
+
+    # Dump that byte in octal format, one integer per byte (--format=o1)
+    # with no indicated radix (--address-radix=n)
+    local octal_byte=$(printf "${stdin_byte}" | od --format=o1 --address-radix=n)
+
+    # Delete all non-digits from output.
+    local filtered_octal_code=$(tr --delete --complement 0-9 <<<"${octal_byte}")
+
+    if [[ -z "${filtered_octal_code}" ]]; then
+        printf ""
+    else
+        printf "\\${filtered_octal_code}"
+    fi
+}
+
+# Bump up the "LOG_LEVEL" to allow more logging info through.
+function log() {
+    local log_level="${1}"
+    shift;
+
+    [[ ${log_level} -gt ${LOG_LEVEL-1} ]] && return
+
+    printf "$@"
+}
+
+# Does not echo input.
+# Result is stored in "INPUT" env var.
+function prompt_or_parse_for_input() {
+    local prompt="${1}"
+    local stdin_char=""
+
+    # If stdin isn't an interactive tty, then try reading.
+    if ! [[ -t 0 ]]; then
+        log 2 ""
+        stdin_char=$(get_first_stdin_byte)
+    fi
+
+    # If we got something from non-interactive stdin, read the rest from there.
+    if [[ -n ${stdin_char} ]]; then
+        log 2 "STDIN input found for prompted input with prompt: \"${prompt}\"\n"
+        read -r -u 0 stdin_line
+        stdin_line="${stdin_char}${stdin_line}"
+    else
+        log 2 "No STDIN input found for prompted input with prompt: \"${prompt}\"\n"
+        read -rs -p "${prompt}" stdin_line </dev/tty
+        printf "\n"
+    fi
+
+    INPUT="${stdin_line}"
+}

@@ -1,0 +1,8 @@
+---
+dependencies:
+  -
+    name: stow
+    bin: stow
+  - # Not particularly necessary. Like, how did you get here to begin with?
+    name: git
+    bin: git

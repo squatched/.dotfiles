@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+# Note, these scripts rely on the presence of `yq` (much like `jq` but for yaml)
+THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PKG_MGR_SPEC_PATH=${THIS_SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}").yml
+source ${THIS_SCRIPT_DIR}/yml-helpers
+source ${THIS_SCRIPT_DIR}/password-utilities
+
+function __get_system_name() {
+
+    for key in $(exec_yq_filter "${PKG_MGR_SPEC_PATH}" -r '.[] | keys_unsorted | .[]'); do
+        pkg_mgr="$(exec_yq_filter "${PKG_MGR_SPEC_PATH}" -r ".package_managers.${key}.package_mgr")"
+        if hash ${pkg_mgr} 2>/dev/null; then
+            printf "${key}\n"
+            return 0
+        fi
+    done
+
+    printf "Current system does not have a package manager spec. " >&2
+    printf "Update ${PKG_MGR_SPEC_PATH} and then try again.\n" >&2
+    return 1
+}
+
+function get_pkg_cmd() {
+    local system="$(__get_system_name)"
+    local cmd="${1}"
+
+    exec_yq_filter \
+        "${PKG_MGR_SPEC_PATH}" \
+        -r ".package_managers.${system}.package_cmds.${cmd}"
+}
+
+# Param 1: Path to the yaml file containing a "dependencies" object.
+# See documentation for ensure_pkgs_installed() for structure of the object.
+function get_pkgs_to_install() {
+    local yaml_path="${1}"
+    local pkgs_to_install=()
+    local dep_count=$(exec_yq_filter "${yaml_path}" '.dependencies | length')
+
+    for ((i = 0; i < $dep_count; ++i)); do
+        local dep_name=$(exec_yq_filter "${yaml_path}" -r ".dependencies[$i].name")
+        local dep_bin=$(exec_yq_filter "${yaml_path}" -r ".dependencies[$i].bin")
+
+        if ! hash $dep_bin 2>/dev/null; then
+            pkgs_to_install+=($dep_name)
+        fi
+    done
+
+    printf "${pkgs_to_install[*]}"
+}
+
+# Param 1: Path to the yaml file containing a "dependencies" object.
+# Param 2: A dependency that should be in this, return its install_cmd param
+#          if it exists.
+function get_pkg_install_cmd() {
+    local yaml_path="${1}"
+    local dep="${2}"
+
+    # Need the "values" filter because... Wow. 8 years of begging for
+    # idiomatic shell results (empty string instead of "null"). Guess
+    # adding "values" as a filter is best I'm gonna get.
+    # https://github.com/stedolan/jq/issues/354
+    exec_yq_filter "${yaml_path}" \
+        -r \
+        ".dependencies[] | select(.name==\"${dep}\").install_cmd? | values"
+}
+
+# Param 1: Path to the yaml file containing a "dependencies" object.
+# Params 2...n: All parameters necessary to install a package. Any packages that
+#   are determined not to be installed will be appended to this as the command
+#   to be executed.
+#
+# The dependecies object should be an array of objects with two string entries.
+#   bin - A binary to check for (must be in $PATH) to see if the package must
+#         be installed.
+#   name - The name of the package to install.
+#   install_cmd - Optional. If specified, this is the command that should be run
+#                 to install this package rather than the default platform pkg
+#                 manager.
+function ensure_pkgs_installed() {
+    local yaml_path="${1}"
+    IFS=' ' read -a pkgs_to_install <<<$(get_pkgs_to_install "${yaml_path}")
+
+    [[ ${#pkgs_to_install[@]} -eq 0 ]] && return 0
+
+    prompt_for_password; printf "\n"
+    sudo_exec "$@" "${pkgs_to_install[@]}"
+}

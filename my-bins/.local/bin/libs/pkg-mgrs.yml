@@ -1,0 +1,12 @@
+---
+package_managers:
+  arch:
+    package_mgr: pacman
+    package_cmds:
+      sync: pacman --sync --refresh
+      install: pacman --sync --noconfirm
+  debian:
+    package_mgr: apt
+    package_cmds:
+      sync: apt update
+      install: apt install --assume-yes

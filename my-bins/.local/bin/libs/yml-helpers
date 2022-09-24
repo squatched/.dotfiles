@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Note, these scripts rely on the presence of `yq` (much like `jq` but for yaml)
+if ! hash yq 2>/dev/null; then
+    printf "Must have the 'yq' package installed.\n" >&2
+    return 1
+fi
+
+function exec_yq_filter() {
+    # First arg is path to .yml file, rest are the filter data and args.
+    # Putting in an array to filter things out.
+    args=("$@")
+    cat "${args[0]}" | yq "${args[@]:1}"
+}
