@@ -1,0 +1,10 @@
+---
+dependencies:
+  -
+    name: git
+    bin: git
+  -
+    name: diff-so-fancy
+    bin: diff-so-fancy
+installation:
+  cmd: ./install.sh

@@ -1,0 +1,51 @@
+# Include this in ~/.gitconfig like so:
+#
+# [include]
+# 	path = /full/path/to/file
+
+# Set emacsclient as the deault editor.
+[core]
+	editor = emacsclient --tty
+
+# Use a newer heuristic that groups changed hunks a little better.
+#
+# See: https://github.com/blog/2188-git-2-9-has-been-released
+[diff]
+	compactionHeuristic = true
+
+# Add commands for displaying a graphical diff tree at command line.
+[alias]
+	lg = !git lg1
+	lg2 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)'
+	lg1 = log --graph --abbrev-commit --decorate --date=relative --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)'
+
+# Force usage of ssh with github.
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+
+# Install diff-so-fancy and enjoy some amazing looking diffs!
+# See: https://github.com/so-fancy/diff-so-fancy
+
+[core]
+	pager = diff-so-fancy | less --tabs=4 -RFX
+[color]
+	ui = always
+[color "diff"]
+	meta = 227
+	commit = "227 bold"
+	frag = "magenta bold"
+	old = "red bold"
+	new = "green bold"
+	whitespace = "red reverse"
+[color "diff-highlight"]
+	oldNormal = "red bold"
+	oldHighlight = "red bold 52"
+	newNormal = "green bold"
+	newHighlight = "green bold 22"
+[diff-so-fancy]
+	first-run = false
+
+# Add an alias for generating patch files.
+# Suitable for usage like `git patch >delta.patch`
+[alias]
+	patch = !git --no-pager diff --no-color

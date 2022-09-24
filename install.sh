@@ -24,18 +24,21 @@ function __run_stow_cmd() {
     "${result[@]}" "$@"
 }
 
-function __install_dep() {
-    if $OPT_DRY_RUN; then
+function __run_cmd() {
+    if ${OPT_DRY_RUN}; then
         printf "INSTALL: "
-        $OPT_NO_SU || printf "sudo "
         printf "%s " "$@"
         printf "\n"
     else
-        if $OPT_NO_SU; then
-            "$@"
-        else
-            sudo_exec "$@"
-        fi
+        "$@"
+    fi
+}
+
+function __install_dependency_pkg() {
+    if ${OPT_INSTALL_DEPS_AS_SU}; then
+        __run_cmd sudo_exec "$@"
+    else
+        __run_cmd "$@"
     fi
 }
 
@@ -67,15 +70,30 @@ function main() {
 
     # Install them.
     if [[ ${#dependencies_to_install[@]} -gt 0 ]]; then
-        __install_dep "${OPT_INSTALL_PKG_CMD[@]}" "${dependencies_to_install[@]}"
+        __install_dependency_pkg "${OPT_INSTALL_PKG_CMD[@]}" "${dependencies_to_install[@]}"
     fi
     for install_cmd in "${dependency_install_cmds[@]}"; do
-        __install_dep "${install_cmd[@]}"
+        __install_dependency_pkg "${install_cmd[@]}"
     done
 
-    __run_stow_cmd "${dirs[@]}"
-}
+    local dirs_to_install=()
+    for dir in "${dirs[@]}"; do
+        [[ -f ${dir}.yml ]] || continue
 
+        install_cmd="$(get_dir_install_cmd "${dir}.yml")"
+        if [[ -z ${install_cmd} ]]; then
+            dirs_to_install+=("${dir}")
+        else
+            # Execute the installation command in the context of the dir.
+            pushd "${dir}" >/dev/null
+            __run_cmd "${install_cmd[@]}"
+            popd >/dev/null
+        fi
+    done
+    if [[ "${#dirs_to_install[@]}" -gt 0 ]]; then
+        __run_stow_cmd "${dirs_to_install[@]}"
+    fi
+}
 
 function show_help() {
     cat <<EOF
@@ -94,9 +112,9 @@ Commands:
   -d | --delete             Deletes the symlinks, but NOT the dependencies.
   -i | --install-pkg-cmd    Override the command used to install dependencies.
                             Defaults to whatever makes sense for your platform.
-  -s | --no-su              Do not execute the given --install-pkg-cmd as the
-                            super user. This is necessary for some package
-                            managers that build as a normal user then install.
+  -s | --no-su              Do not install dependency packages as the super
+                            user. This is necessary for some package managers
+                            that build as a normal user then install.
   -h | --help               Display this help message.
 EOF
 }
@@ -127,7 +145,7 @@ DIRS=()
 OPT_DRY_RUN="false"
 OPT_REINSTALL="false"
 OPT_DELETE="false"
-OPT_NO_SU="false"
+OPT_INSTALL_DEPS_AS_SU="true"
 OPT_TARGET_DIR="${HOME}"
 OPT_INSTALL_PKG_CMD=$( get_pkg_cmd install )
 eval set -- "${PARSED_ARGS}"
@@ -136,7 +154,7 @@ while [[ ${#} -gt 0 ]]; do
         -n|--dry-run)   OPT_DRY_RUN="true";;
         -r|--reinstall) OPT_REINSTALL="true";;
         -d|--delete)    OPT_DELETE="true";;
-        -s|--no-su)     OPT_NO_SU="true";;
+        -s|--no-su)     OPT_INSTALL_DEPS_AS_SU="false";;
         -t|--target)    OPT_TARGET_DIR="${2}"; shift;;
         -i|--install-pkg-cmd)
                         OPT_INSTALL_PKG_CMD="${2}"; shift;;
