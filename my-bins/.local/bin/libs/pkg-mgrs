@@ -70,6 +70,11 @@ function get_dir_install_cmd() {
     exec_yq_filter "${1}" -r ".installation?.cmd? | values"
 }
 
+# Param 1: Path to the yaml file.
+function get_dir_postinstall_cmd() {
+    exec_yq_filter "${1}" -r ".installation?.post_install? | values"
+}
+
 # Param 1: Path to the yaml file containing a "dependencies" object.
 # Params 2...n: All parameters necessary to install a package. Any packages that
 #   are determined not to be installed will be appended to this as the command

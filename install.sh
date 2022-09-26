@@ -34,6 +34,14 @@ function __run_cmd() {
     fi
 }
 
+function __run_in_dir() {
+    local dir="${1}"
+
+    pushd "${dir}">/dev/null
+    "$@"
+    popd >/dev/null
+}
+
 function __install_dependency_pkg() {
     if ${OPT_INSTALL_DEPS_AS_SU}; then
         __run_cmd sudo_exec "$@"
@@ -85,14 +93,20 @@ function main() {
             dirs_to_install+=("${dir}")
         else
             # Execute the installation command in the context of the dir.
-            pushd "${dir}" >/dev/null
-            __run_cmd "${install_cmd[@]}"
-            popd >/dev/null
+            __run_dir_cmd __run_cmd "${install_cmd[@]}"
         fi
     done
     if [[ "${#dirs_to_install[@]}" -gt 0 ]]; then
         __run_stow_cmd "${dirs_to_install[@]}"
     fi
+
+    # Run post install hooks.
+    for dir in "${dirs[@]}"; do
+        post_install="$(get_dir_post_install_cmd "${dir}.yml")"
+        if ! [[ -z ${post_install} ]]; then
+            __run_dir_cmd __run_cmd "${post_install}"
+        fi
+    done
 }
 
 function show_help() {

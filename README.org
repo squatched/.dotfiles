@@ -38,5 +38,6 @@ Any folder that is a package to be installed, if there are dependencies involved
 - `install_cmd`: If this dependency needs a special installation command (maybe its `curl`ed and piped into a shell, that's dirty and I HIGHLY discourage such activities but I dunno what you do in your own bedroom, that's on you), you can specify it here. This command will be run verbatim if the `--no-su` flag is supplied to the `install.sh` script. Otherwise it will be executed as the super user.
 
 * Custom Dir Installation Commands
-When you specify a <dir> and it's <dir>.yml, there can be a top level object named `installation` with some sub objects.
+When you specify a <dir> and it's <dir>.yml, there can be a top level object named `installation` with some sub objects. (All this is optional.)
 - `cmd`: This should be a bash script that is run from within the context of the <dir> to install it.
+- `post_install`: This should be a bash script that is run post installation (so after dependencies have all successfully installed as well as the package itself).
