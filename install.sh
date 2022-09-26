@@ -14,14 +14,12 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source ${SCRIPT_DIR}/my-bins/.local/bin/libs/pkg-mgrs
 source ${SCRIPT_DIR}/my-bins/.local/bin/libs/password-utilities
 
-function __run_stow_cmd() {
-    local result=(stow)
-    $OPT_DRY_RUN && result+=(--no --verbose) || true
-    $OPT_REINSTALL && result+=("--restow") || true
-    $OPT_DELETE && result+=("--delete") || true
-    result+=(--target="${OPT_TARGET_DIR}")
-
-    "${result[@]}" "$@"
+function __install_dependency_pkg() {
+    if ${OPT_INSTALL_DEPS_AS_SU}; then
+        __run_cmd sudo_exec "$@"
+    else
+        __run_cmd "$@"
+    fi
 }
 
 function __run_cmd() {
@@ -42,12 +40,14 @@ function __run_in_dir() {
     popd >/dev/null
 }
 
-function __install_dependency_pkg() {
-    if ${OPT_INSTALL_DEPS_AS_SU}; then
-        __run_cmd sudo_exec "$@"
-    else
-        __run_cmd "$@"
-    fi
+function __run_stow_cmd() {
+    local result=(stow)
+    $OPT_DRY_RUN && result+=(--no --verbose) || true
+    $OPT_REINSTALL && result+=("--restow") || true
+    $OPT_DELETE && result+=("--delete") || true
+    result+=(--target="${OPT_TARGET_DIR}")
+
+    "${result[@]}" "$@"
 }
 
 function main() {
